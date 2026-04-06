@@ -1,84 +1,58 @@
 import torch
+from torch.utils.data import IterableDataset, DataLoader
 from datasets import load_dataset
-from tokenizers import ByteLevelBPETokenizer
-from torch.utils.data import DataLoader, Dataset
+import tiktoken
 
-# Configuration
-VOCAB_SIZE = 10000
-CONTEXT_LENGTH = 512 # The maximum sequence length the model will process at once
-BATCH_SIZE = 16
+# --- V2 Configuration ---
+CONTEXT_LENGTH = 1024  # Doubled from V1 to allow for longer reasoning
+BATCH_SIZE = 8         # Keeping this conservative; we can scale it up later based on your 48GB RAM
+VOCAB_SIZE = 50257     # Standard GPT-2 vocabulary size
 
-# ---------------------------------------------------------
-# Step 1: Load the Dataset and Train the Tokenizer
-# ---------------------------------------------------------
-print("Loading TinyStories dataset...")
-# We use a small subset just to train the tokenizer quickly
-dataset = load_dataset("roneneldan/TinyStories", split="train[:1%]") 
+class StreamingTextDataset(IterableDataset):
+    def __init__(self, dataset_name, split, context_length):
+        # streaming=True is the magic word. It downloads the dataset chunk by chunk
+        # as the neural network requests it, preventing RAM explosion.
+        print(f"Connecting to {dataset_name} stream...")
+        self.dataset = load_dataset(dataset_name, name="sample-10BT", split=split, streaming=True)
+        self.context_length = context_length
+        
+        # Initialize the production-grade OpenAI tokenizer
+        self.tokenizer = tiktoken.get_encoding("gpt2")
+        self.eot_token = self.tokenizer.eot_token
 
-def batch_iterator(dataset, batch_size=1000):
-    for i in range(0, len(dataset), batch_size):
-        yield dataset[i : i + batch_size]["text"]
+    def __iter__(self):
+        buffer = []
+        for item in self.dataset:
+            # Grab the raw text from the web document
+            text = item["text"]
+            
+            # Encode the text into integers and append the End-Of-Text token
+            tokens = self.tokenizer.encode(text, allowed_special="all")
+            buffer.extend(tokens)
+            buffer.append(self.eot_token)
 
-print("Training custom BPE tokenizer...")
-tokenizer = ByteLevelBPETokenizer()
-tokenizer.train_from_iterator(
-    batch_iterator(dataset),
-    vocab_size=VOCAB_SIZE,
-    min_frequency=2,
-    special_tokens=["<|endoftext|>"]
+            # Once our buffer has enough tokens for a full context window + 1 target token
+            while len(buffer) >= self.context_length + 1:
+                # Slice out the perfect sequence length
+                chunk = buffer[:self.context_length + 1]
+                
+                # Pop those tokens off the front of the buffer so we don't reuse them
+                buffer = buffer[self.context_length:] 
+                
+                # Create our shifted inputs (x) and targets (y)
+                x = torch.tensor(chunk[:-1], dtype=torch.long)
+                y = torch.tensor(chunk[1:], dtype=torch.long)
+                
+                yield x, y
+
+# Initialize the streaming dataset using the 10 Billion Token sample of FineWeb-Edu
+train_dataset = StreamingTextDataset(
+    dataset_name="HuggingFaceFW/fineweb-edu", 
+    split="train", 
+    context_length=CONTEXT_LENGTH
 )
 
-# Save it so we don't have to train it every time
-tokenizer.save("tinystories-bpe.json")
-EOT_TOKEN_ID = tokenizer.token_to_id("<|endoftext|>")
-
-# ---------------------------------------------------------
-# Step 2: Tokenize and Chunk the Data
-# ---------------------------------------------------------
-class LanguageModelingDataset(Dataset):
-    def __init__(self, hf_dataset, tokenizer, seq_length):
-        self.tokenizer = tokenizer
-        self.seq_length = seq_length
-        self.tokens = []
-        
-        # Tokenize everything and pack into a single massive 1D array
-        # In a production environment, we'd stream this to save RAM, 
-        # but TinyStories is small enough to hold in memory.
-        print("Tokenizing dataset...")
-        for item in hf_dataset:
-            # Encode text and append the End-Of-Text token
-            encoded = tokenizer.encode(item["text"]).ids + [EOT_TOKEN_ID]
-            self.tokens.extend(encoded)
-            
-        self.tokens = torch.tensor(self.tokens, dtype=torch.long)
-        print(f"Total tokens in dataset: {len(self.tokens):,}")
-
-    def __len__(self):
-        # Calculate how many full context-length blocks we have
-        return len(self.tokens) // self.seq_length
-
-    def __getitem__(self, idx):
-        # Grab a chunk of tokens of size seq_length + 1
-        # The +1 is because the target for each token is the very next token
-        start_idx = idx * self.seq_length
-        end_idx = start_idx + self.seq_length + 1
-        chunk = self.tokens[start_idx:end_idx]
-        
-        # x is the input sequence, y is the target sequence (shifted by 1)
-        x = chunk[:-1]
-        y = chunk[1:]
-        return x, y
-
-# Load the full training split (or a larger subset) for actual training
-full_dataset = load_dataset("roneneldan/TinyStories", split="train[:10%]")
-lm_dataset = LanguageModelingDataset(full_dataset, tokenizer, CONTEXT_LENGTH)
-
-# ---------------------------------------------------------
-# Step 3: Create the DataLoader
-# ---------------------------------------------------------
-dataloader = DataLoader(lm_dataset, batch_size=BATCH_SIZE, shuffle=True)
-
-# Test the pipeline
-inputs, targets = next(iter(dataloader))
-print(f"\nInput shape: {inputs.shape}")   # Expected: [16, 512]
-print(f"Target shape: {targets.shape}") # Expected: [16, 512]
+# DataLoader setup
+# Note: Because we are using an IterableDataset, shuffle=True is handled 
+# differently, so we omit it here and stream linearly.
+dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE)
