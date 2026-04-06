@@ -12,9 +12,9 @@ D_MODEL = 768
 N_HEADS = 12
 N_LAYERS = 12
 LEARNING_RATE = 4e-4
-MAX_STEPS = 5000
+MAX_STEPS = 100000
 EVAL_INTERVAL = 100
-CHECKPOINT_INTERVAL = 1000
+CHECKPOINT_INTERVAL = 5000
 
 def train():
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
