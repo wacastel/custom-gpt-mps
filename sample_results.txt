@@ -1,0 +1,43 @@
+(base) william@MacBook-Pro-M5-Max custom-gpt-mps % python generate.py 
+Connecting to HuggingFaceFW/fineweb-edu stream...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Resolving data files: 100%|█████████████████████████████████████████████████████| 2410/2410 [00:00<00:00, 114505.00it/s]
+Loading OpenAI tiktoken...
+Loading 124M model architecture...
+Loading trained weights from checkpoints/v2_model_final.pt...
+✅ Model loaded successfully!
+Enter a document prefix to complete (or 'quit' to exit): The fundamental difference between a client-side framework and a server-side framework is
+
+--- Generating ---
+The fundamental difference between a client-side framework and a server-side framework is that it treats all the data as private entities. The server-side framework does not apply to any particular organization because it is an interface between the client and the server. The client-side framework does not have the same set of rights as a client-side or a server-side framework. The core of a client-side framework is that the client-side is not a part of the database.
+The second difference between a server-side and server-side framework is that in the client-side, a client and server-side have similar rights. In this paper, we look at the differences between a client-side and server-side framework, and the difference between a client-side and server-side framework.
+The difference between client-side and server-side frameworks is that, client-side frameworks do not provide all the rights that a client-side does. These are called functional functional frameworks and they are intended to implement a set of rules for how data can be
+------------------
+
+Enter a document prefix to complete (or 'quit' to exit): In classical mechanics, Newton's third law states that
+
+--- Generating ---
+In classical mechanics, Newton's third law states that every possible action is equal to its sum. The law states: "The action is given equal to the sum. For example, a straight line is in one of the following ways:
+If you were to make a law for a moment, you would notice that the law for the moment is in the following way:
+If you made a law in which a string of numbers is in the following way, you would notice that the law must be at the same time.
+The law of motion is a kind of law, because it implies that the law is in motion, and the law of motion is in motion. The law of motion states:
+If you make a law in motion, then a law is in motion.
+If you make a law in motion, then an action is in motion.
+If you made a law in motion, then the law of motion is in motion.
+If you make a law in motion (and the law of motion is not in motion),
+------------------
+
+Enter a document prefix to complete (or 'quit' to exit): During the Apollo 11 mission, the lunar module
+
+--- Generating ---
+During the Apollo 11 mission, the lunar module will be used during the mission to provide valuable information on the orbits of the planets. This information will allow for the spacecraft to provide useful information on the processes of the planets, including the formation of planets, how they grew or formed, and how they are changing over time.
+The objectives of the mission are:
+- To provide information on the orbits of planets, the science objectives, and their processes, and to provide timely information on each of these topics.
+- To provide information on how planets and planets are changing over time and into the formation of planets, the science objectives, and the science objectives, and to provide timely information on each of these topics.
+- To provide timely information on the processes of the formation of planets, the science objectives, and their processes, and to provide timely information on each of these topics.
+- To provide timely information on the laws of physics, to provide timely information on each of these topics.
+- To provide timely information on the orbits of
+------------------
+
+Enter a document prefix to complete (or 'quit' to exit): quit
+(base) william@MacBook-Pro-M5-Max custom-gpt-mps % 
